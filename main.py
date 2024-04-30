@@ -1,108 +1,53 @@
+# -*- coding: utf-8 -*-
+
+import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from collections import Counter
+import os
+from model import model
+from sklearn.model_selection import train_test_split
 
-points = {'blue': [[2,4], [1,3], [2,3], [3,2], [2,1]],
-          'orange': [[5,6], [4,5], [4,6], [6,6], [5,4]]}
+os.chdir(r'C:\things\test\test_project')
+X = pd.read_csv('Boston.csv')
 
-new_point = [3,3]
+#normalize the training data
+mean = X.mean()
+std = X.std()
 
+def normalize(X):
+    return ((X-mean)/std)
 
-def euclidean_distance(p, q):
-    return np.sqrt(np.sum((np.array(p) - np.array(q)) ** 2))
+def unnormalize(X):
+    return (X * std) + mean
+    
 
+# the target variable 'y' shall be the last attribute 'MEDV'.
+#This is the median value of owner-occupied homes in Boston suburbs.  
+#The input matrix 'X' is a m x (n+1) matrix. Here m = 506 samples and n = 13
 
-class KNearestNeighbors:
+X = normalize(X)
+y = X['MEDV'].to_numpy()
 
-    def __init__(self, k=3):
-        self.k = k
-        self.points = None
-
-    def fit(self, points):
-        self.points = points
-
-    def predict(self, new_point):
-        distances = []
-
-        for category in self.points:
-            for point in self.points[category]:
-                distance = euclidean_distance(point, new_point)
-                distances.append([distance, category])
-
-        categories = [category[1] for category in sorted(distances)[:self.k]]
-        result = Counter(categories).most_common(1)[0][0]
-        return result
+ones = pd.DataFrame(np.ones(len(y)))
+X = X.iloc[: , :-1]
+X = ones.join(X).to_numpy()
 
 
-clf = KNearestNeighbors(k=3)
-clf.fit(points)
-print(clf.predict(new_point))
+X_train, X_test, y_train, y_test = train_test_split(X ,y,  test_size= 0.25)
 
-# Visualize KNN Distances
 
-ax = plt.subplot()
-ax.grid(False, color='#000000')
+#initialize the model
+model = model(13)
 
-ax.set_facecolor('black')
-ax.figure.set_facecolor('#121212')
-ax.tick_params(axis='x', colors='white')
-ax.tick_params(axis='y', colors='white')
+#fit with gradient descent and calculate the training loss
+model.fit_GD(X_train, y_train)
+print(model.loss(X_test, y_test))
 
-for point in points['blue']:
-    ax.scatter(point[0], point[1], color='#104DCA', s=60)
+model.fit_GD2(X_train, y_train)
+print(model.loss(X_test, y_test))
 
-for point in points['orange']:
-    ax.scatter(point[0], point[1], color='#EF6C35', s=60)
 
-new_class = clf.predict(new_point)
-color = '#EF6C35' if new_class == 'orange' else '#104DCA'
-ax.scatter(new_point[0], new_point[1], color=color, marker='*', s=200, zorder=100)
-
-for point in points['blue']:
-    ax.plot([new_point[0], point[0]], [new_point[1], point[1]], color='#104DCA', linestyle='--', linewidth=1)
-
-for point in points['orange']:
-    ax.plot([new_point[0], point[0]], [new_point[1], point[1]], color='#EF6C35', linestyle='--', linewidth=1)
-
-plt.show()
-
-# 3D Example
-
-points = {'blue': [[2, 4, 3], [1, 3, 5], [2, 3, 1], [3, 2, 3], [2, 1, 6]],
-          'orange': [[5, 6, 5], [4, 5, 2], [4, 6, 1], [6, 6, 1], [5, 4, 6], [10, 10, 4]]}
-
-new_point = [3, 3, 4]
-
-clf = KNearestNeighbors(k=3)
-clf.fit(points)
-print(clf.predict(new_point))
-
-fig = plt.figure(figsize=(12, 12))
-ax = fig.add_subplot(projection='3d')
-ax.grid(True, color='#323232')
-
-ax.set_facecolor('black')
-ax.figure.set_facecolor('#121212')
-ax.tick_params(axis='x', colors='white')
-ax.tick_params(axis='y', colors='white')
-
-for point in points['blue']:
-    ax.scatter(point[0], point[1], point[2], color='#104DCA', s=60)
-
-for point in points['orange']:
-    ax.scatter(point[0], point[1], point[2], color='#EF6C35', s=60)
-
-new_class = clf.predict(new_point)
-color = '#EF6C35' if new_class == 'orange' else '#104DCA'
-ax.scatter(new_point[0], new_point[1], new_point[2], color=color, marker='*', s=200, zorder=100)
-
-for point in points['blue']:
-    ax.plot([new_point[0], point[0]], [new_point[1], point[1]], [new_point[2], point[2]], color='#104DCA', linestyle='--', linewidth=1)
-
-for point in points['orange']:
-    ax.plot([new_point[0], point[0]], [new_point[1], point[1]], [new_point[2], point[2]], color='#EF6C35', linestyle='--', linewidth=1)
-
-plt.show()
+model.fit_analytic(X_train, y_train)
+print(model.loss(X_test, y_test))
 
 
 
